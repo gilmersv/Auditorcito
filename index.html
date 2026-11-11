@@ -1,0 +1,435 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>El Auditorcito</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* Layout: un panel de trabajo tipo expediente — barra de identidad arriba, columna de carga a la izquierda, tablero de resultados a la derecha; en móvil se apila. */
+:root{
+  --bg:#f4f6f9; --paper:#ffffff; --ink:#18222f; --ink-2:#4a5667; --line:#d6dce5; --line-2:#e9edf2;
+  --accent:#1f4e8c; --accent-ink:#ffffff; --accent-soft:#e6eef9;
+  --alta:#b42318; --alta-bg:#fdebe9; --media:#b7791f; --media-bg:#fdf3e2; --baja:#2f6f4e; --baja-bg:#e6f3ec;
+  --display:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f141b; --paper:#171e27; --ink:#e8edf3; --ink-2:#a3aebc; --line:#2b3542; --line-2:#222b36;
+  --accent:#7aa7e6; --accent-ink:#0f141b; --accent-soft:#1c2a3d;
+  --alta:#f08a80; --alta-bg:#3a1c19; --media:#e6b35a; --media-bg:#3a2d14; --baja:#7fcf9f; --baja-bg:#163124;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141b; --paper:#171e27; --ink:#e8edf3; --ink-2:#a3aebc; --line:#2b3542; --line-2:#222b36;
+  --accent:#7aa7e6; --accent-ink:#0f141b; --accent-soft:#1c2a3d;
+  --alta:#f08a80; --alta-bg:#3a1c19; --media:#e6b35a; --media-bg:#3a2d14; --baja:#7fcf9f; --baja-bg:#163124;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:14px}
+.sello{width:54px;height:54px;border:2px solid var(--ink);border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:22px;transform:rotate(-8deg);position:relative;flex:none}
+.sello::after{content:"";position:absolute;inset:4px;border:1px dashed var(--ink);border-radius:50%;opacity:.5}
+h1{font-family:var(--display);font-weight:700;font-size:30px;line-height:1.05;margin:0;text-wrap:balance}
+.tag{font-family:var(--mono);font-size:12px;color:var(--ink-2);letter-spacing:.04em;text-transform:uppercase}
+nav.tabs{display:flex;gap:4px}
+nav.tabs button{font:inherit;font-weight:500;background:none;border:1px solid var(--line);border-bottom:none;color:var(--ink-2);padding:8px 14px;border-radius:6px 6px 0 0;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--paper);color:var(--ink);border-color:var(--ink)}
+nav.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:22px}
+@media (max-width:820px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:18px;min-width:0}
+.panel h2{font-family:var(--display);font-size:19px;font-weight:600;margin:0 0 10px}
+.panel h3{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);margin:18px 0 8px;font-weight:600}
+label.field{display:block;font-weight:500;margin:12px 0 6px}
+select,textarea,input[type=text]{font:inherit;width:100%;border:1px solid var(--line);border-radius:6px;padding:9px 10px;background:var(--paper);color:var(--ink)}
+select:focus-visible,textarea:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+textarea{min-height:150px;resize:vertical}
+[hidden]{display:none!important}
+.drop{display:block;border:2px dashed var(--line);border-radius:8px;padding:22px 14px;text-align:center;color:var(--ink-2);cursor:pointer;transition:border-color .15s}
+.drop.over,.drop:hover{border-color:var(--accent);color:var(--ink)}
+.drop strong{color:var(--ink)}
+.drop input{display:none}
+.fileinfo{font-family:var(--mono);font-size:12px;color:var(--ink-2);margin-top:8px;word-break:break-word}
+.btn{font:inherit;font-weight:600;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);padding:10px 16px;border-radius:6px;cursor:pointer;width:100%;margin-top:14px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:none;color:var(--accent);width:auto;padding:7px 12px;margin:0}
+.btn.ghost[disabled]{opacity:.45}
+.status{font-family:var(--mono);font-size:12px;color:var(--ink-2);margin-top:10px;min-height:18px}
+.empty{color:var(--ink-2);padding:32px 10px;text-align:center}
+.empty p{max-width:52ch;margin:8px auto}
+.dictamen{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:14px;border:1px solid var(--line);border-left:6px solid var(--accent);border-radius:6px;margin-bottom:16px}
+.dictamen .big{font-family:var(--display);font-size:22px;font-weight:700;line-height:1.1}
+.dictamen.no-apto{border-left-color:var(--alta)}.dictamen.sust{border-left-color:var(--media)}.dictamen.menores{border-left-color:var(--baja)}.dictamen.apto{border-left-color:var(--baja)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px}
+.tile{border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.tile .n{font-family:var(--display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.tile .l{font-size:12px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+.tile.alta .n{color:var(--alta)}.tile.media .n{color:var(--media)}.tile.baja .n{color:var(--baja)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
+.c{border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px}
+.c .sev{align-self:start;font-family:var(--mono);font-size:11px;font-weight:500;padding:3px 7px;border-radius:4px;white-space:nowrap}
+.sev.ALTA{background:var(--alta-bg);color:var(--alta)}.sev.MEDIA{background:var(--media-bg);color:var(--media)}.sev.BAJA{background:var(--baja-bg);color:var(--baja)}
+.c .head{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+.c .anchor{grid-column:2;font-style:italic;color:var(--ink-2);border-left:3px solid var(--line);padding-left:8px;margin:2px 0 6px;font-size:14px}
+.c p{grid-column:2;margin:0 0 4px;font-size:14px}
+.c p b{font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line-2);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);font-weight:600}
+.tscroll{overflow-x:auto}
+.ok{color:var(--baja);font-weight:600}.nok{color:var(--alta);font-weight:600}
+details{border:1px solid var(--line);border-radius:6px;padding:8px 12px;margin-top:10px}
+summary{cursor:pointer;font-weight:600}
+.ficha{white-space:pre-wrap;font-family:var(--mono);font-size:13px;line-height:1.5;border:1px solid var(--line);border-radius:6px;padding:14px;background:var(--bg);max-height:600px;overflow:auto}
+.sem{display:inline-block;font-family:var(--mono);font-weight:500;padding:3px 9px;border-radius:4px}
+.sem.ROJO{background:var(--alta-bg);color:var(--alta)}.sem.ÁMBAR,.sem.AMBAR{background:var(--media-bg);color:var(--media)}.sem.VERDE{background:var(--baja-bg);color:var(--baja)}
+footer{margin-top:36px;border-top:1px solid var(--line);padding-top:14px;font-size:13px;color:var(--ink-2);display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
+footer b{color:var(--ink)}
+.note{font-size:13px;color:var(--ink-2)}
+.hidden{display:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="brand">
+    <div class="sello" aria-hidden="true">A</div>
+    <div>
+      <h1>El Auditorcito</h1>
+      <div class="tag">Revisor de informes de control · CGR Perú · marco normativo verificado al 06/11/2026</div>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" id="tab-rev" data-view="rev">Revisar informe</button>
+    <button role="tab" aria-selected="false" id="tab-sem" data-view="sem">Semilla de control</button>
+  </nav>
+</header>
+
+<!-- ============ VISTA 1: REVISIÓN ============ -->
+<section id="view-rev" class="grid">
+  <aside class="panel">
+    <h2>1. Carga el informe</h2>
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+      <strong>Arrastra el .docx aquí</strong><br>o haz clic para elegirlo
+    </label>
+    <div class="fileinfo" id="fileinfo">Ningún archivo cargado.</div>
+
+    <label class="field" for="tipo">2. Tipo de servicio e informe</label>
+    <select id="tipo">
+      <option value="auto">Inferir de la carátula</option>
+      <optgroup label="Control simultáneo">
+        <option value="CC">Control Concurrente – Informe de Hito / de Control Concurrente</option>
+        <option value="VC">Visita de Control – Informe de Visita de Control</option>
+        <option value="OO">Orientación de Oficio – Informe de Orientación de Oficio</option>
+        <option value="CP">Control Preventivo a Obras Públicas Paralizadas – Informe de Control Preventivo</option>
+      </optgroup>
+      <optgroup label="Control posterior">
+        <option value="AOP">Acción de Oficio Posterior – Informe de AOP</option>
+        <option value="SCE">Servicio de Control Específico – Informe de Control Específico</option>
+        <option value="AC">Auditoría de Cumplimiento – Informe de Auditoría</option>
+      </optgroup>
+    </select>
+
+    <label class="field" for="ctx">3. Contexto adicional (opcional)</label>
+    <textarea id="ctx" style="min-height:80px" placeholder="Ej.: el hito evaluado es la valorización n.° 7; la entidad es un gobierno regional; adjuntaremos los apéndices por separado."></textarea>
+
+    <button class="btn" id="run" disabled>Revisar con El Auditorcito</button>
+    <button class="btn ghost" id="stop" style="margin-top:8px" hidden>Detener</button>
+    <div class="status" id="status"></div>
+    <p class="note">La revisión usa tu propia cuenta de Claude; la primera vez te pedirá permiso. El texto del informe sale de tu navegador solo hacia Claude. No cargues informes con información clasificada como secreta o reservada.</p>
+  </aside>
+
+  <main class="panel" id="out">
+    <div class="empty" id="empty">
+      <div class="sello" style="margin:0 auto 10px" aria-hidden="true">A</div>
+      <p><b>Aquí aparecerá el Informe Resumen de Calidad.</b></p>
+      <p>Carga un informe en Word, elige la modalidad y pulsa <i>Revisar</i>. Obtendrás el dictamen, el tablero de comentarios por severidad, la matriz de verificación de la Directiva aplicable y el mismo .docx con los comentarios insertados al margen.</p>
+      <p class="note">Modalidades cubiertas: control concurrente, visita de control, orientación de oficio, control preventivo a obras paralizadas, acción de oficio posterior, control específico y auditoría de cumplimiento.</p>
+    </div>
+    <div id="result" hidden></div>
+  </main>
+</section>
+
+<!-- ============ VISTA 2: SEMILLA ============ -->
+<section id="view-sem" class="grid" hidden>
+  <aside class="panel">
+    <h2>Semilla de control</h2>
+    <p class="note">Pega una noticia, una norma recién publicada, una denuncia o un reporte de SEACE / INFOBRAS / SIAF. El Auditorcito la convierte en una Ficha de Semilla de Control con el servicio recomendado y los pasos para verificarla antes de comunicar.</p>
+    <label class="field" for="semilla">Texto de la semilla</label>
+    <textarea id="semilla" placeholder="Pega aquí el texto completo, con medio, fecha y enlace si los tienes."></textarea>
+    <label class="field" for="entidad">Entidad u OCI desde el que evalúas (opcional)</label>
+    <input type="text" id="entidad" placeholder="Ej.: OCI de un ministerio del gobierno nacional">
+    <button class="btn" id="runSem" disabled>Generar ficha</button>
+    <div class="status" id="statusSem"></div>
+    <p class="note">El Auditorcito no navega ni verifica en línea: todo dato que no esté en el texto pegado saldrá marcado [VERIFICAR].</p>
+  </aside>
+  <main class="panel">
+    <div class="empty" id="emptySem"><p><b>Aquí aparecerá la Ficha de Semilla de Control.</b></p><p>Incluye semáforo de riesgo, servicio de control recomendado y alternativo según las NGCG, pasos de verificación C.1 a C.8, información a requerir y el borrador de Hoja Informativa listo para comunicar.</p></div>
+    <div id="resultSem" hidden></div>
+  </main>
+</section>
+
+<footer>
+  <div><b>El Auditorcito</b> · creado por GSV · Herramienta de apoyo a la revisión</div>
+  <div>No reemplaza el criterio profesional del auditor ni la supervisión y aseguramiento de la calidad previstos en la normativa de la Contraloría; no constituye documento oficial del Sistema Nacional de Control.</div>
+</footer>
+</div>
+
+<script>
+/* =========================================================
+   PROMPT DEL AUDITORCITO (versión operativa embebida)
+   ========================================================= */
+const PROMPT_BASE = `Eres El Auditorcito, un asistente de revisión que actúa como auditor gubernamental experto del Sistema Nacional de Control del Perú, con más de quince años revisando informes de control de la Contraloría General de la República (CGR) y de los Órganos de Control Institucional (OCI). Revisas FONDO y FORMA, propones comentarios al margen y una mejora concreta en cada uno. Fuiste creado por GSV y eres una herramienta de apoyo: no sustituyes el criterio del auditor ni la supervisión institucional.
+
+PRINCIPIOS
+1. Normativa verificable, nunca inventada: solo citas las normas de la tabla MARCO NORMATIVO o las que aparecen en el propio informe. Si necesitas una norma sectorial y no estás seguro de su número o vigencia, escribe [VERIFICAR NORMA] y describe cuál buscar. Nunca atribuyas a una directiva un numeral, anexo o plazo que no conste en ella.
+2. Jerarquía: Ley 27785 → NGCG (R.C. 295-2021-CG y modificatorias) → directiva específica del servicio → normativa sectorial.
+3. Evidencia: toda afirmación relevante debe tener documento, fecha, folio o apéndice; alerta las afirmaciones huérfanas.
+4. Separación por tipo de servicio: nunca exijas a un informe de control simultáneo elementos del posterior (responsabilidades, pliego de hechos) ni viceversa.
+5. Lenguaje: simultáneo = preventivo (situación adversa, riesgo, podría afectar); posterior = concluyente sobre hechos y presunta responsabilidad; control preventivo a obras paralizadas = positivo, constructivo, facilitador.
+6. Siempre propones mejora: cada comentario cierra con redacción sugerida, dato faltante o acción concreta.
+7. No completas vacíos: lo que falta se marca [DATO FALTANTE].
+8. Confidencialidad: en el resumen te refieres a las personas por cargo.
+9. Si dudas, emites un comentario CONSULTA antes que callar o inventar.
+No cambias el texto del informe; no opinas sobre responsabilidad penal o civil de personas concretas; no calificas infracciones del PAS por tu cuenta, solo verificas que la calificación se ajuste a la Ley 31288.
+
+MARCO NORMATIVO VIGENTE (verificado al 06/11/2026)
+Transversales: Ley 27785 (mod. por Leyes 29622, 30742, 31288, 32073; hay dictamen de reforma 2026 en el Congreso: verificar promulgación). NGCG: R.C. 295-2021-CG, mod. por R.C. 158-2023, 223-2023, 245-2023, 062-2024, 247-2024 (mod. 281-2024), 253-2024, 324-2024 y 218-2025. Ley 31288 y Reglamento del PAS (R.C. 166-2021-CG y mod.; conductas ajustadas por sentencia del TC; solo hechos desde el 21/07/2021). Directiva 009-2023-CG/SESNC (R.C. 263-2023-CG, mod. R.C. 264-2023) implementación de recomendaciones de control posterior. Directiva 005-2026-CG/ACAL (R.C. 322-2026-CG) aseguramiento de la calidad en control posterior. Directiva 020-2020-CG/NORM de los OCI (R.C. 392-2020-CG, mod. R.C. 124-2021, 131-2023, 350-2023).
+Control simultáneo: Directiva 013-2022-CG/NORM Servicio de Control Simultáneo (R.C. 218-2022-CG; mod. R.C. 270-2022, 062-2023, 429-2023, 714-2024, 219-2025): num. 7.1 Control Concurrente (Informe de Hito de Control e Informe de Control Concurrente), num. 7.2 Visita de Control (Anexo 16), num. 7.3 Orientación de Oficio (Anexo 17; Formato 1B del Anexo 2), num. 7.5 Control Preventivo a Obras Públicas Paralizadas. Directiva 004-2025-CG/VCST Control Preventivo a las Obras Públicas Paralizadas (R.C. 220-2025-CG): anexos 2 Estudio Preliminar, 5 Plan de Control Preventivo, 8 metodología de causa raíz (5 porqués), 9 Matriz de Riesgos y Estrategias de Mitigación, 10 Matriz de Problemas y Aportes, 11 Acta de Compromisos, 12 Cédula de Trabajo, 13 Informe de Control Preventivo, 14 Matriz de Formulación de Recomendaciones, 15 Oficio de Notificación.
+Control posterior: Directiva 007-2023-CG/VCIC Acción de Oficio Posterior (R.C. 253-2023-CG; dejó sin efecto la 023-2022-CG/VCIC). Directiva 007-2021-CG/NORM Servicio de Control Específico a Hechos con Presunta Irregularidad (R.C. 134-2021-CG; mod. R.C. 140-2021, 043-2022, 239-2023): Anexo 11 Pliego de Hechos, Anexo 20 Informe de Control Específico, num. 6.1.5 monto objeto de control. Directiva 001-2022-CG/NORM Auditoría de Cumplimiento y Manual de Auditoría de Cumplimiento (R.C. 001-2022-CG; dejó sin efecto la 007-2014-CG/GCSII).
+REGLA: si el informe cita una directiva derogada o sustituida (002-2019, 017-2016, 007-2014, 023-2022, 273-2014-CG, etc.), comentario NORMA / ALTA indicando cuál corresponde.
+
+PROTOCOLO DE FONDO
+A. Coherencia: tipo, modalidad y directiva de la carátula coinciden con el marco; objetivo, alcance y materia consistentes con el plan o carpeta; cada hallazgo dentro del alcance; conclusiones responden una a una a los hallazgos; recomendaciones derivan de conclusiones, con destinatario y medibles.
+B. Elementos del hallazgo. Condición: narración objetiva, concreta y cronológica con evidencia. Criterio: norma, cláusula o instrumento VIGENTE a la fecha del hecho, con artículo o numeral (alerta criterio derogado, posterior al hecho, genérico o sin relación lógica). Consecuencia/efecto: en simultáneo riesgo potencial en términos de probabilidad; en posterior efecto real, cuantificado con fórmula y fuente. Causa: obligatoria en auditoría de cumplimiento; causa raíz (5 porqués) en control preventivo a obras paralizadas; no se exige en las demás.
+C. Evidencia suficiente y apropiada; cuadros que cuadran; fotos con fecha, lugar y leyenda.
+D. Responsabilidades (solo control específico y auditoría de cumplimiento): persona vinculada a hecho, deber incumplido con fuente (norma, ROF, MOF, contrato) y conducta; tipificación Ley 31288 solo para hechos desde 21/07/2021; descargos evaluados uno por uno. En AOP, en todo control simultáneo y en control preventivo, identificar responsabilidades es ALTA.
+E. Proporcionalidad: lenguaje proporcional a la evidencia; sin interferir en la gestión en simultáneo.
+
+PROTOCOLO DE FORMA (solo cuando afecta claridad, trazabilidad o imagen institucional)
+Estructura del anexo de la directiva; carátula completa; numeración de páginas, cuadros, fotos y apéndices; apéndices citados y existentes; firmas y cargos. Redacción clara, impersonal, sin siglas no definidas, oraciones de menos de 40 palabras, sin adjetivos valorativos, términos uniformes, tiempo verbal correcto, "n.°" y mayúsculas institucionales. Normas citadas completas la primera vez; fechas y montos uniformes (S/, miles, dos decimales); nombres idénticos; referencias cruzadas correctas.
+
+CATEGORÍAS (una por comentario): ESTRUCTURA, NORMA, EVIDENCIA, CONDICIÓN, CRITERIO, EFECTO, CAUSA, RESPONSABILIDAD, CONCLUSIÓN, RECOMENDACIÓN, COHERENCIA, CÁLCULO, REDACCIÓN, FORMATO, CONSULTA, MEJORA.
+SEVERIDAD: ALTA (impide aprobar o expone a nulidad o cuestionamiento legal), MEDIA (debilita; corregir antes de la firma), BAJA (forma o estilo).
+REGLAS DE COMENTARIO: un problema, un comentario, anclado al párrafo mínimo que lo sustenta; si el error se repite, comenta la primera aparición y añade "Se repite en ..."; un comentario en cada hallazgo aunque esté bien (MEJORA/BAJA confirmando que cumple sus elementos); los MEJORA nunca superan a los de fondo; máximo 120 palabras por comentario; español institucional, sin emojis ni exclamaciones.
+DICTAMEN: NO APTO si hay al menos un ALTA en RESPONSABILIDAD, o dos o más ALTA en CONDICIÓN/CRITERIO/EVIDENCIA sobre el mismo hallazgo, o la norma de origen está derogada. REQUIERE CORRECCIONES SUSTANTIVAS si hay cualquier otro ALTA. APTO CON CORRECCIONES MENORES si solo hay MEDIA y BAJA. APTO PARA FIRMA si solo hay BAJA o MEJORA.`;
+
+const MATRICES = {
+CC:`MATRIZ 6.1 CONTROL CONCURRENTE (Directiva 013-2022, num. 7.1): hito evaluado identificado y coincide con el Plan de Control Concurrente [ESTRUCTURA/ALTA]; cada situación adversa con condición, criterio y consecuencia en lenguaje preventivo sobre proceso en curso [CONDICIÓN/ALTA]; criterio vigente a la fecha del hito [NORMA/ALTA]; no identifica responsables ni usa lenguaje de posterior [RESPONSABILIDAD/ALTA]; listado de documentos e instrumentos evaluados [ESTRUCTURA/MEDIA]; conclusiones por situación adversa y recomendación al Titular, con estado de situaciones adversas anteriores si es hito posterior [CONCLUSIÓN/MEDIA]; plazo para que la entidad informe acciones [ESTRUCTURA/MEDIA]; oficio de notificación con destinatarios exigidos [FORMATO/MEDIA].`,
+VC:`MATRIZ 6.2 VISITA DE CONTROL (Directiva 013-2022, num. 7.2, Anexo 16): actividad verificada in situ con lugar, fecha y hora [CONDICIÓN/ALTA]; evidencia de constatación directa (actas, fotos fechadas, registros) [EVIDENCIA/ALTA]; situaciones adversas con tres elementos y lenguaje preventivo [CONDICIÓN/ALTA]; sin responsabilidades [RESPONSABILIDAD/ALTA]; conclusiones, recomendación al Titular y plazo de respuesta [CONCLUSIÓN/MEDIA]; estructura del Anexo 16 [ESTRUCTURA/MEDIA].`,
+OO:`MATRIZ 6.3 ORIENTACIÓN DE OFICIO (Directiva 013-2022, num. 7.3 mod. R.C. 714-2024, Anexo 17): comunica situaciones advertidas de revisión de información o proceso en curso, sin visita ni evaluación de hito [ESTRUCTURA/ALTA]; describe hecho, norma vigente y riesgo, y orienta al Titular sin ordenar [CONDICIÓN/ALTA]; sin conclusiones de responsabilidad ni cuantificación de perjuicio [RESPONSABILIDAD/ALTA]; extensión y estructura del Anexo 17 [FORMATO/MEDIA]; fuente de la información identificada [EVIDENCIA/MEDIA].`,
+CP:`MATRIZ 6.7 CONTROL PREVENTIVO A OBRAS PÚBLICAS PARALIZADAS (Directiva 004-2025-CG/VCST, num. 6, 7 y Anexo 13; modalidad facilitadora y participativa): origen con Estudio Preliminar (Anexo 2) o exoneración y Plan de Control Preventivo (Anexo 5) aprobado, alcance coincidente [ESTRUCTURA/ALTA]; obra cumple definición de paralizada (sin avance físico 6 meses o más, o contrato resuelto o nulo no culminado) y se identifica modalidad y estado contractual [CONDICIÓN/ALTA]; cada problema con condición, causa raíz por 5 porqués (Anexo 8) y consecuencia, y Matriz de Problemas y Aportes (Anexo 10) por problema [CAUSA/ALTA]; riesgos significativos evaluados por probabilidad e impacto en Matriz de Riesgos (Anexo 9) con estrategia de mitigación [EVIDENCIA/ALTA]; Acta(s) de Compromisos (Anexo 11) suscritas por Titular, responsables y actores clave, comisión como veedora, cada compromiso con acción, plazo y responsable [ESTRUCTURA/ALTA]; informe con alcance, problemas y riesgos, causas raíz, compromisos y plazos, acciones ya adoptadas, conclusiones y recomendaciones de reactivación y mitigación (num. 7.1.3.1) [ESTRUCTURA/ALTA]; recomendaciones con Matriz de Formulación (Anexo 14): un verbo en infinitivo + objeto, resultado esperado, no vinculantes [RECOMENDACIÓN/MEDIA]; sin responsabilidades; hechos irregulares comunicados aparte (Quinta DCF) [RESPONSABILIDAD/ALTA]; base normativa vigente según modalidad de obra (Ley 30225 o 32069 según fecha de contrato, TUO Ley 31589 D.S. 206-2024-EF, R.C. 195-88-CG y Directiva 017-2023-CG/GMPL para administración directa) [NORMA/ALTA]; plazos: ejecución hasta 20 días hábiles, informe en 5 días hábiles desde el acta, aprobación 2, notificación 1 [FORMATO/MEDIA]; firmas de toda la comisión y aprobación del OUO u OCI; anexos adjuntos [FORMATO/MEDIA]; oficio de notificación (Anexo 15) a Titular y actores clave vía casilla electrónica [FORMATO/MEDIA]; recuerda Plan de Acción a 5 días hábiles, avances cada 20 y comunicación de interrupción mayor a 45 días hábiles (Sexta DCF) [ESTRUCTURA/MEDIA]; si había control concurrente en curso, consta su suspensión (Cuarta DCF) [COHERENCIA/BAJA].`,
+AOP:`MATRIZ 6.4 ACCIÓN DE OFICIO POSTERIOR (Directiva 007-2023-CG/VCIC): origen identificado (gestión de denuncias u otra fuente) y vinculación del hecho [ESTRUCTURA/ALTA]; hecho con indicio de irregularidad con condición, criterio y efecto sobre hecho consumado [CONDICIÓN/ALTA]; no identifica responsables [RESPONSABILIDAD/ALTA]; recomendación al Titular para adoptar acciones y deslindar responsabilidades, implementable [RECOMENDACIÓN/MEDIA]; si amerita control específico o auditoría, lo recomienda [RECOMENDACIÓN/MEDIA]; esquema y oficio conforme a directiva [ESTRUCTURA/MEDIA].`,
+SCE:`MATRIZ 6.5 CONTROL ESPECÍFICO (Directiva 007-2021-CG/NORM y mod.): origen y alcance coinciden con el Plan de Control Específico [ESTRUCTURA/ALTA]; hecho irregular con condición, criterio, efecto y monto objeto de control con fórmula y fuente (num. 6.1.5) [CÁLCULO/ALTA]; Pliego de Hechos (Anexo 11) comunicado a cada persona con constancia y plazo, comentarios evaluados individualmente [RESPONSABILIDAD/ALTA]; por persona: cargo, periodo, deber incumplido con fuente, conducta y nexo [RESPONSABILIDAD/ALTA]; tipo de responsabilidad congruente; si Ley 31288, hecho posterior al 21/07/2021 y conducta por numeral [RESPONSABILIDAD/ALTA]; conclusiones por hecho y recomendaciones según Anexo 20 [CONCLUSIÓN/ALTA]; apéndices de evidencia, pliegos y designaciones [EVIDENCIA/MEDIA]; si es reformulado, cumple Segunda DCF (R.C. 239-2023) [ESTRUCTURA/MEDIA].`,
+AC:`MATRIZ 6.6 AUDITORÍA DE CUMPLIMIENTO (Directiva 001-2022-CG/NORM y Manual): objetivos, materia, alcance y periodo coinciden con el plan definitivo [ESTRUCTURA/ALTA]; cada observación con condición, criterio, efecto y causa; desviaciones comunicadas y comentarios evaluados [CAUSA/ALTA]; criterio vigente y transcrito con exactitud [NORMA/ALTA]; presunta responsabilidad por persona con deber, conducta y nexo; calificación PAS conforme a Ley 31288 [RESPONSABILIDAD/ALTA]; perjuicio cuantificado con método, fuente y cuadro [CÁLCULO/ALTA]; conclusiones por observación; recomendaciones al Titular alineadas a Directiva 009-2023 [CONCLUSIÓN/MEDIA]; deficiencias de control interno en su sección [ESTRUCTURA/MEDIA]; apéndices completos y evidencia por observación [EVIDENCIA/MEDIA]; estándares de la Directiva 005-2026-CG/ACAL [ESTRUCTURA/MEDIA].`
+};
+const TIPO_NOMBRE={CC:"Control Concurrente",VC:"Visita de Control",OO:"Orientación de Oficio",CP:"Control Preventivo a Obras Públicas Paralizadas",AOP:"Acción de Oficio Posterior",SCE:"Servicio de Control Específico a Hechos con Presunta Irregularidad",AC:"Auditoría de Cumplimiento"};
+
+const PROMPT_SEMILLA = `Eres El Auditorcito (creado por GSV), auditor gubernamental experto del Sistema Nacional de Control del Perú. Convierte la SEMILLA (noticia, norma nueva, denuncia o reporte de sistema) en una Ficha de Semilla de Control. No navegas: todo dato que no conste en la semilla se marca [VERIFICAR]; nunca inventes cifras, nombres, contratos ni normas; distingue hecho verificado (fuente primaria), hecho reportado (prensa) e hipótesis.
+CLASIFICACIÓN NGCG (R.C. 295-2021-CG y mod., num. 1.16): control previo (solo CGR; fuera de alcance); control simultáneo: Control Concurrente (Directiva 013-2022 num. 7.1: proceso en curso con hitos sucesivos de alto monto), Visita de Control (num. 7.2: actividad puntual verificable in situ), Orientación de Oficio (num. 7.3: norma nueva con plazos o riesgo advertido sin evaluar hito), Control Preventivo a Obras Públicas Paralizadas (Directiva 004-2025-CG/VCST: obra sin avance físico 6 meses o más, o contrato resuelto o nulo no culminado); control posterior: Acción de Oficio Posterior (Directiva 007-2023-CG/VCIC: hecho consumado puntual con indicio, sin responsables), Servicio de Control Específico (Directiva 007-2021-CG/NORM: hecho consumado acotado con posible responsabilidad y monto cuantificable; umbrales del PNC [VERIFICAR]), Auditoría de Cumplimiento (Directiva 001-2022-CG/NORM: materia amplia, varios periodos); servicios relacionados (gestión de denuncias, etc.) para derivación; ninguno si es competencia de otra entidad o ya está en control.
+SEMÁFORO: ROJO actuar esta semana (decisión irreversible próxima, monto alto o servicio esencial, norma con plazo menor a 30 días); ÁMBAR programar en el mes; VERDE registrar y monitorear.
+PASOS C.1 fuente primaria, C.2 entidad y competencia (ROF, Directiva 020-2020), C.3 estado del proceso (SEACE, INFOBRAS, SIAF), C.4 duplicidad (SCG, Plan Anual), C.5 criterio vigente, C.6 riesgo y materialidad, C.7 información a requerir, C.8 capacidad y oportunidad, C.9 decisión de comunicación.`;
+
+/* ========================= UI ========================= */
+const $=id=>document.getElementById(id);
+let sampleFn=null, downloadsNs=null, ctl=null;
+let docx={zip:null,name:"",paras:[],docXml:""}; let lastResult=null, lastTipo=null;
+
+(async()=>{ try{ sampleFn=await claude.use("sample"); }catch(e){} if(!sampleFn){ $("status").textContent="Esta vista no puede consultar a Claude: ábrela desde claude.ai."; $("statusSem").textContent=$("status").textContent; } refreshButtons(); })();
+(async()=>{ try{ downloadsNs=await claude.use("downloads"); }catch(e){} })();
+
+document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('nav.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  $("view-rev").hidden=b.dataset.view!=="rev"; $("view-sem").hidden=b.dataset.view!=="sem";
+}));
+try{ if(location.hash==="#semilla") $("tab-sem").click(); }catch(e){}
+
+function refreshButtons(){ $("run").disabled=!(sampleFn&&docx.paras.length); $("runSem").disabled=!(sampleFn&&$("semilla").value.trim().length>40); }
+$("semilla").addEventListener('input',refreshButtons);
+
+const drop=$("drop");
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) loadFile(f);});
+$("file").addEventListener('change',e=>{const f=e.target.files[0]; if(f) loadFile(f);});
+
+async function loadFile(f){
+  $("fileinfo").textContent="Leyendo "+f.name+"…";
+  try{
+    if(!/\.docx$/i.test(f.name)) throw new Error("Solo se aceptan archivos .docx");
+    const zip=await JSZip.loadAsync(f);
+    const xml=await zip.file("word/document.xml").async("string");
+    const paras=extractParas(xml);
+    if(!paras.length) throw new Error("El documento no tiene texto legible");
+    docx={zip,name:f.name,paras,docXml:xml};
+    const chars=paras.reduce((a,p)=>a+p.text.length,0);
+    $("fileinfo").textContent=f.name+" · "+paras.length+" párrafos con texto · "+chars.toLocaleString("es-PE")+" caracteres"+(chars>180000?" · se enviará un extracto (límite de tamaño)":"");
+    $("status").textContent="";
+  }catch(err){ docx={zip:null,name:"",paras:[],docXml:""}; $("fileinfo").textContent="No se pudo leer el archivo: "+(err.message||err); }
+  refreshButtons();
+}
+function extractParas(xml){
+  const doc=new DOMParser().parseFromString(xml,"application/xml");
+  const W="http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+  const ps=doc.getElementsByTagNameNS(W,"p"); const out=[];
+  for(let i=0;i<ps.length;i++){
+    const ts=ps[i].getElementsByTagNameNS(W,"t"); let s="";
+    for(let j=0;j<ts.length;j++) s+=ts[j].textContent;
+    s=s.replace(/\s+/g," ").trim();
+    if(s) out.push({idx:i,text:s});
+  }
+  return out;
+}
+
+/* ====================== REVISIÓN ====================== */
+$("stop").addEventListener('click',()=>ctl&&ctl.abort());
+$("run").addEventListener('click',async()=>{
+  const tipo=$("tipo").value; const ctx=$("ctx").value.trim();
+  let budget=170000, body="", used=0, truncated=false;
+  for(const p of docx.paras){ const line="[P"+String(p.idx).padStart(4,"0")+"] "+p.text+"\n"; if(used+line.length>budget){truncated=true;break;} body+=line; used+=line.length; }
+  const matriz= tipo==="auto" ? Object.values(MATRICES).join("\n") : MATRICES[tipo];
+  const prompt = PROMPT_BASE+"\n\n"+matriz+"\n\nTIPO DE SERVICIO INDICADO POR EL USUARIO: "+(tipo==="auto"?"no indicado; infiérelo de la carátula y aplica SOLO la matriz que corresponda":TIPO_NOMBRE[tipo])+
+    (ctx?"\nCONTEXTO ADICIONAL DEL USUARIO: "+ctx:"")+
+    "\n\nINFORME A REVISAR (cada párrafo lleva un identificador [Pnnnn]; úsalo como ancla):\n"+body+(truncated?"\n[El informe continúa; se omitió el resto por tamaño: indícalo en consultas.]":"")+
+    `\n\nResponde SOLO con un objeto JSON con esta forma exacta:
+{"tipo_detectado":"nombre de la modalidad e informe","directiva":"directiva aplicada con resolución y modificatorias","dictamen":"NO APTO|REQUIERE CORRECCIONES SUSTANTIVAS|APTO CON CORRECCIONES MENORES|APTO PARA FIRMA","resumen":"2 a 3 oraciones para el jefe de comisión: qué revisar primero y horas-persona estimadas, sin adjetivar el desempeño",
+"comentarios":[{"n":1,"p":"P0012","ancla":"primeras 6 a 10 palabras del párrafo anclado, copiadas literalmente","categoria":"NORMA","severidad":"ALTA","observa":"qué se observa","criterio":"norma, numeral o anexo que sustenta","mejora":"cómo debería ser: redacción sugerida o acción"}],
+"matriz":[{"verificacion":"texto de la fila de la matriz aplicada","cumple":true,"comentario":0}],
+"normas":[{"norma":"norma citada por el informe","estado":"vigente|derogada|verificar","obs":"observación breve"}],
+"fortalezas":["2 a 4 viñetas"],"consultas":["comentarios CONSULTA, [DATO FALTANTE] y [VERIFICAR NORMA] con lo que se necesita"]}
+Reglas: entre 6 y 40 comentarios según el tamaño del informe; "p" debe ser un identificador existente; "comentario" en matriz es el n del comentario relacionado o 0; cubre TODAS las filas de la matriz aplicada; ordena los comentarios por aparición en el documento.`;
+  ctl=new AbortController(); $("run").disabled=true; $("stop").hidden=false; $("status").textContent="Pensando… la revisión completa suele tardar entre 1 y 3 minutos."; $("result").hidden=true; $("empty").hidden=false;
+  try{
+    const r=await sampleFn.json(prompt,{signal:ctl.signal,modelTier:"complex",cache:false,onText:({text})=>{$("status").textContent="Escribiendo la revisión… "+text.length.toLocaleString("es-PE")+" caracteres";}});
+    lastResult=normalize(r); lastTipo=tipo; renderResult(lastResult); $("status").textContent="Revisión completada.";
+  }catch(e){ $("status").textContent=copyFor(e&&e.code,e); }
+  finally{ $("stop").hidden=true; refreshButtons(); ctl=null; }
+});
+function copyFor(code,e){
+  switch(code){
+    case "cancelled": return "Revisión detenida.";
+    case "not_granted": return "No autorizaste el uso de Claude en esta página; vuelve a cargarla para permitirlo.";
+    case "rate_limited": return "Has alcanzado el límite de uso de tu cuenta de Claude; inténtalo más tarde.";
+    case "prompt_too_large": return "El informe es demasiado extenso para una sola revisión; divide el archivo por capítulos.";
+    case "invalid_json": return "La respuesta no llegó en el formato esperado; vuelve a pulsar Revisar.";
+    case "refused": return "Claude declinó revisar este contenido.";
+    case "session_expired": return "Tu sesión de Claude expiró; vuelve a iniciar sesión.";
+    default: return "No se pudo completar la revisión ("+(code||"error")+"). Inténtalo de nuevo.";
+  }
+}
+function normalize(r){
+  r=r&&typeof r==="object"?r:{}; r.comentarios=Array.isArray(r.comentarios)?r.comentarios:[]; r.matriz=Array.isArray(r.matriz)?r.matriz:[]; r.normas=Array.isArray(r.normas)?r.normas:[]; r.fortalezas=Array.isArray(r.fortalezas)?r.fortalezas:[]; r.consultas=Array.isArray(r.consultas)?r.consultas:[];
+  r.comentarios.forEach((c,i)=>{c.n=Number(c.n)||i+1;c.severidad=String(c.severidad||"MEDIA").toUpperCase();c.categoria=String(c.categoria||"CONSULTA").toUpperCase();});
+  return r;
+}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));}
+function dictClass(d){d=String(d||"").toUpperCase(); if(d.startsWith("NO APTO"))return"no-apto"; if(d.includes("SUSTANT"))return"sust"; if(d.includes("MENORES"))return"menores"; return"apto";}
+function renderResult(r){
+  const cnt={ALTA:0,MEDIA:0,BAJA:0}; r.comentarios.forEach(c=>{cnt[c.severidad]=(cnt[c.severidad]||0)+1;});
+  const cats={}; r.comentarios.forEach(c=>{cats[c.categoria]=cats[c.categoria]||{ALTA:0,MEDIA:0,BAJA:0}; cats[c.categoria][c.severidad]=(cats[c.categoria][c.severidad]||0)+1;});
+  let h=`<div class="dictamen ${dictClass(r.dictamen)}"><div><div class="tag">Dictamen del revisor</div><div class="big">${esc(r.dictamen)}</div></div><div style="flex:1;min-width:220px"><div class="tag">Informe · directiva aplicada</div><div>${esc(r.tipo_detectado)}</div><div class="note">${esc(r.directiva)}</div></div></div>`;
+  h+=`<div class="tiles"><div class="tile"><div class="n">${r.comentarios.length}</div><div class="l">Comentarios</div></div><div class="tile alta"><div class="n">${cnt.ALTA}</div><div class="l">Alta</div></div><div class="tile media"><div class="n">${cnt.MEDIA}</div><div class="l">Media</div></div><div class="tile baja"><div class="n">${cnt.BAJA}</div><div class="l">Baja</div></div></div>`;
+  h+=`<p>${esc(r.resumen)}</p>`;
+  h+=`<div class="actions"><button class="btn ghost" id="dl" ${downloadsNs?"":"disabled title='Descarga no disponible en esta vista'"}>Descargar Word comentado</button><button class="btn ghost" id="cp">Copiar Informe Resumen</button></div>`;
+  h+=`<h3>Comentarios al margen (${r.comentarios.length})</h3>`;
+  r.comentarios.forEach(c=>{h+=`<div class="c"><span class="sev ${esc(c.severidad)}">${esc(c.severidad)}</span><div class="head">[${esc(c.categoria)} | ${esc(c.severidad)} | ${String(c.n).padStart(2,"0")}] · ${esc(c.p)}</div><div class="anchor">“${esc(c.ancla)}”</div><p><b>Qué se observa:</b> ${esc(c.observa)}</p><p><b>Criterio:</b> ${esc(c.criterio)}</p><p><b>Cómo debería ser:</b> ${esc(c.mejora)}</p></div>`;});
+  h+=`<h3>Tablero por categoría</h3><div class="tscroll"><table><thead><tr><th>Categoría</th><th>Alta</th><th>Media</th><th>Baja</th><th>Total</th></tr></thead><tbody>`;
+  Object.keys(cats).sort().forEach(k=>{const v=cats[k];h+=`<tr><td>${esc(k)}</td><td>${v.ALTA||0}</td><td>${v.MEDIA||0}</td><td>${v.BAJA||0}</td><td>${(v.ALTA||0)+(v.MEDIA||0)+(v.BAJA||0)}</td></tr>`;});
+  h+=`</tbody></table></div>`;
+  h+=`<h3>Matriz de verificación del tipo de informe</h3><div class="tscroll"><table><thead><tr><th>Verificación</th><th>Cumple</th><th>Comentario</th></tr></thead><tbody>`;
+  r.matriz.forEach(m=>{h+=`<tr><td>${esc(m.verificacion)}</td><td class="${m.cumple?"ok":"nok"}">${m.cumple?"Sí":"No"}</td><td>${m.comentario?"n.° "+esc(m.comentario):"—"}</td></tr>`;});
+  h+=`</tbody></table></div>`;
+  h+=`<h3>Normas citadas por el informe</h3><div class="tscroll"><table><thead><tr><th>Norma</th><th>Estado</th><th>Observación</th></tr></thead><tbody>`;
+  r.normas.forEach(n=>{h+=`<tr><td>${esc(n.norma)}</td><td class="${/vigente/i.test(n.estado)?"ok":(/derog/i.test(n.estado)?"nok":"")}">${esc(n.estado)}</td><td>${esc(n.obs)}</td></tr>`;});
+  h+=`</tbody></table></div>`;
+  if(r.fortalezas.length){h+=`<h3>Fortalezas del informe</h3><ul>`+r.fortalezas.map(f=>`<li>${esc(f)}</li>`).join("")+`</ul>`;}
+  if(r.consultas.length){h+=`<h3>Consultas pendientes para la comisión</h3><ul>`+r.consultas.map(f=>`<li>${esc(f)}</li>`).join("")+`</ul>`;}
+  h+=`<p class="note" style="margin-top:18px">El Auditorcito · creado por GSV · Herramienta de apoyo. No reemplaza el criterio profesional del auditor ni constituye documento oficial del Sistema Nacional de Control.</p>`;
+  $("result").innerHTML=h; $("result").hidden=false; $("empty").hidden=true;
+  $("cp").addEventListener('click',async()=>{const md=resumenMd(r); try{await navigator.clipboard.writeText(md); $("cp").textContent="Copiado";}catch(e){ const ta=document.createElement("textarea"); ta.value=md; $("result").appendChild(ta); ta.select(); $("cp").textContent="Selecciona y copia el texto"; } setTimeout(()=>$("cp").textContent="Copiar Informe Resumen",2500);});
+  $("dl").addEventListener('click',async()=>{ $("dl").disabled=true; $("dl").textContent="Generando…"; try{ const blob=await buildCommentedDocx(r); await downloadsNs.save({filename:docx.name.replace(/\.docx$/i,"")+" - revisado por El Auditorcito.docx",data:blob}); $("dl").textContent="Descargado"; }catch(e){ $("dl").textContent=(e&&e.code==="cancelled")?"Descarga cancelada":"No se pudo generar: "+(e&&(e.message||e.code)||e); } setTimeout(()=>{$("dl").textContent="Descargar Word comentado";$("dl").disabled=false;},3000); });
+}
+function resumenMd(r){
+  const cnt={ALTA:0,MEDIA:0,BAJA:0}; r.comentarios.forEach(c=>{cnt[c.severidad]=(cnt[c.severidad]||0)+1;});
+  let s=`# Informe Resumen de Calidad\n\n**Informe revisado:** ${r.tipo_detectado}\n**Directiva aplicada:** ${r.directiva}\n**Dictamen del revisor:** ${r.dictamen}\n\n## 1. Tablero de comentarios\n| Severidad | Total |\n| --- | --- |\n| Alta | ${cnt.ALTA} |\n| Media | ${cnt.MEDIA} |\n| Baja | ${cnt.BAJA} |\n| **Total** | ${r.comentarios.length} |\n\n## 2. Correcciones prioritarias\n`;
+  r.comentarios.filter(c=>c.severidad==="ALTA").slice(0,5).forEach((c,i)=>{s+=`${i+1}. [${c.n}] – ${c.p} – ${c.observa}\n`;});
+  s+=`\n## 3. Verificación de la matriz\n| Verificación | Cumple | Comentario n.° |\n| --- | --- | --- |\n`; r.matriz.forEach(m=>{s+=`| ${m.verificacion} | ${m.cumple?"Sí":"No"} | ${m.comentario||"—"} |\n`;});
+  s+=`\n## 4. Normas citadas y su estado\n| Norma | Estado | Observación |\n| --- | --- | --- |\n`; r.normas.forEach(n=>{s+=`| ${n.norma} | ${n.estado} | ${n.obs} |\n`;});
+  s+=`\n## 5. Fortalezas\n`+r.fortalezas.map(f=>"- "+f).join("\n")+`\n\n## 6. Consultas pendientes\n`+r.consultas.map(f=>"- "+f).join("\n")+`\n\n## Comentarios\n`;
+  r.comentarios.forEach(c=>{s+=`\n[${c.categoria} | ${c.severidad} | ${String(c.n).padStart(2,"0")}] (${c.p}: “${c.ancla}”)\nQué se observa: ${c.observa}\nCriterio: ${c.criterio}\nCómo debería ser: ${c.mejora}\n`;});
+  s+=`\n${r.resumen}\n\n---\nEl Auditorcito · creado por GSV · Herramienta de apoyo. No reemplaza el criterio profesional del auditor ni constituye documento oficial del Sistema Nacional de Control.\n`;
+  return s;
+}
+
+/* ============== WORD CON COMENTARIOS NATIVOS ============== */
+async function buildCommentedDocx(r){
+  const W="http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+  const zip=await JSZip.loadAsync(await docx.zip.generateAsync({type:"blob"}));
+  const doc=new DOMParser().parseFromString(docx.docXml,"application/xml");
+  const ps=doc.getElementsByTagNameNS(W,"p");
+  // ids existentes
+  let nextId=0, existing="";
+  const cf=zip.file("word/comments.xml");
+  if(cf){ existing=await cf.async("string"); const ids=[...existing.matchAll(/w:id="(\d+)"/g)].map(m=>+m[1]); if(ids.length) nextId=Math.max(...ids)+1; }
+  const now=new Date().toISOString().replace(/\.\d+Z$/,"Z");
+  const cnt={ALTA:0,MEDIA:0,BAJA:0}; r.comentarios.forEach(c=>{cnt[c.severidad]=(cnt[c.severidad]||0)+1;});
+  const altas=r.comentarios.filter(c=>c.severidad==="ALTA").slice(0,3);
+  const general=["[RESUMEN DE REVISIÓN]",`Dictamen: ${r.dictamen}.`,`Comentarios: ${r.comentarios.length} (Alta ${cnt.ALTA}, Media ${cnt.MEDIA}, Baja ${cnt.BAJA}).`,"Correcciones prioritarias:"].concat(altas.map(c=>`- n.° ${c.n}: ${c.observa}`)).concat([r.resumen,"Revisión asistida por El Auditorcito, creado por GSV. Herramienta de apoyo: no sustituye el criterio profesional de la comisión ni la revisión de calidad institucional."]);
+  const items=[{pidx:docx.paras[0].idx,lines:general}];
+  r.comentarios.forEach(c=>{ const m=/P(\d+)/.exec(String(c.p||"")); let pidx=m?+m[1]:-1; if(pidx<0||pidx>=ps.length||!ps[pidx].getElementsByTagNameNS(W,"t").length){ pidx=findByAnchor(c.ancla); } if(pidx<0) pidx=docx.paras[0].idx; items.push({pidx,lines:[`[${c.categoria} | ${c.severidad} | ${String(c.n).padStart(2,"0")}]`,`Qué se observa: ${c.observa}`,`Criterio: ${c.criterio}`,`Cómo debería ser: ${c.mejora}`]}); });
+  let commentsXml="";
+  items.forEach(it=>{
+    const id=nextId++; const p=ps[it.pidx];
+    const start=doc.createElementNS(W,"w:commentRangeStart"); start.setAttributeNS(W,"w:id",id);
+    const end=doc.createElementNS(W,"w:commentRangeEnd"); end.setAttributeNS(W,"w:id",id);
+    const run=doc.createElementNS(W,"w:r"); const rpr=doc.createElementNS(W,"w:rPr"); const rs=doc.createElementNS(W,"w:rStyle"); rs.setAttributeNS(W,"w:val","CommentReference"); rpr.appendChild(rs); run.appendChild(rpr); const ref=doc.createElementNS(W,"w:commentReference"); ref.setAttributeNS(W,"w:id",id); run.appendChild(ref);
+    const ppr=p.getElementsByTagNameNS(W,"pPr")[0]; if(ppr&&ppr.parentNode===p) p.insertBefore(start,ppr.nextSibling); else p.insertBefore(start,p.firstChild);
+    p.appendChild(end); p.appendChild(run);
+    commentsXml+=`<w:comment w:id="${id}" w:author="El Auditorcito (GSV)" w:date="${now}" w:initials="EA">`+it.lines.map(l=>`<w:p><w:r><w:t xml:space="preserve">${escXml(l)}</w:t></w:r></w:p>`).join("")+`</w:comment>`;
+  });
+  zip.file("word/document.xml",new XMLSerializer().serializeToString(doc));
+  if(existing){ zip.file("word/comments.xml",existing.replace(/<\/w:comments>\s*$/,commentsXml+"</w:comments>")); }
+  else{
+    zip.file("word/comments.xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:comments xmlns:w="${W}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">${commentsXml}</w:comments>`);
+    let ct=await zip.file("[Content_Types].xml").async("string");
+    if(!/comments\.xml/.test(ct)) ct=ct.replace("</Types>",`<Override PartName="/word/comments.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"/></Types>`);
+    zip.file("[Content_Types].xml",ct);
+    let rels=await zip.file("word/_rels/document.xml.rels").async("string");
+    if(!/comments\.xml/.test(rels)) rels=rels.replace("</Relationships>",`<Relationship Id="rIdAudC1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments" Target="comments.xml"/></Relationships>`);
+    zip.file("word/_rels/document.xml.rels",rels);
+  }
+  return zip.generateAsync({type:"blob",mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+}
+function findByAnchor(a){ a=String(a||"").toLowerCase().replace(/[“”"]/g,"").trim().slice(0,40); if(!a) return -1; const p=docx.paras.find(p=>p.text.toLowerCase().includes(a)); return p?p.idx:-1; }
+function escXml(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+/* ====================== SEMILLA ====================== */
+$("runSem").addEventListener('click',async()=>{
+  const sem=$("semilla").value.trim().slice(0,60000); const ent=$("entidad").value.trim();
+  const prompt=PROMPT_SEMILLA+(ent?"\nÓRGANO DESDE EL QUE SE EVALÚA: "+ent:"")+"\n\nSEMILLA:\n"+sem+`\n\nResponde SOLO con un objeto JSON: {"semaforo":"ROJO|ÁMBAR|VERDE","fuente":"medio o sistema, título, fecha, URL si consta","tipo":"noticia|norma nueva|denuncia|reporte de sistema|otro","entidad":"nombre, nivel de gobierno, unidad orgánica","hecho":"resumen de 5 líneas sin adjetivos","estado":"en curso|consumado|paralizado y evidencia del estado","monto":"S/ o población afectada, con [VERIFICAR] si no consta","normativa":"criterio vigente con artículo o [VERIFICAR NORMA]","servicio":"modalidad recomendada y directiva","justificacion":"por qué esa modalidad según NGCG","alternativo":"modalidad alternativa y justificación en una línea","competencia":"OCI de ... / unidad orgánica de la CGR / no corresponde al SNC","verificaciones":[{"paso":"C.1 Fuente primaria","resultado":"qué se verificó o qué falta","fuente":"dónde"}],"requerir":["documento – órgano que lo custodia"],"recursos":"horas-persona y perfiles","riesgo_no_actuar":"qué se vuelve irreversible y cuándo","pendientes":["[VERIFICAR] abiertos"],"hoja_informativa":"borrador de Hoja Informativa al Jefe de OCI de máximo una página: asunto, antecedente, análisis, conclusión, recomendación","segundo_borrador":"si ROJO: borrador de Informe de Orientación de Oficio (Anexo 17) o, si es obra paralizada, Estudio Preliminar (Anexo 2) con secciones I a V; si no, cadena vacía"}. Incluye las nueve verificaciones C.1 a C.9.`;
+  ctl=new AbortController(); $("runSem").disabled=true; $("statusSem").textContent="Pensando…";
+  try{ const r=await sampleFn.json(prompt,{signal:ctl.signal,modelTier:"default",cache:false,onText:({text})=>{$("statusSem").textContent="Escribiendo la ficha… "+text.length+" caracteres";}}); renderSem(r); $("statusSem").textContent="Ficha generada."; }
+  catch(e){ $("statusSem").textContent=copyFor(e&&e.code,e); }
+  finally{ ctl=null; refreshButtons(); }
+});
+function renderSem(r){
+  r=r&&typeof r==="object"?r:{}; const V=Array.isArray(r.verificaciones)?r.verificaciones:[]; const Q=Array.isArray(r.requerir)?r.requerir:[]; const P=Array.isArray(r.pendientes)?r.pendientes:[];
+  const fecha=new Date().toLocaleDateString("es-PE",{day:"2-digit",month:"long",year:"numeric"});
+  let h=`<div class="dictamen"><div><div class="tag">Ficha de Semilla de Control · ${esc(fecha)}</div><div class="big"><span class="sem ${esc(String(r.semaforo||"").toUpperCase())}">${esc(r.semaforo)}</span></div></div><div style="flex:1;min-width:220px"><div class="tag">Servicio recomendado</div><div><b>${esc(r.servicio)}</b></div><div class="note">${esc(r.justificacion)}</div></div></div>`;
+  const rows=[["Fuente de la semilla",r.fuente],["Tipo",r.tipo],["Entidad y órgano",r.entidad],["Hecho o riesgo",r.hecho],["Estado del proceso",r.estado],["Monto o alcance",r.monto],["Normativa aplicable",r.normativa],["Servicio alternativo",r.alternativo],["Competencia",r.competencia],["Recursos estimados",r.recursos],["Riesgo de no actuar",r.riesgo_no_actuar]];
+  h+=`<div class="tscroll"><table><tbody>`+rows.map(x=>`<tr><th style="width:30%">${esc(x[0])}</th><td>${esc(x[1])}</td></tr>`).join("")+`</tbody></table></div>`;
+  h+=`<h3>Verificaciones (C.1 a C.9)</h3><div class="tscroll"><table><thead><tr><th>Paso</th><th>Resultado</th><th>Fuente</th></tr></thead><tbody>`+V.map(v=>`<tr><td>${esc(v.paso)}</td><td>${esc(v.resultado)}</td><td>${esc(v.fuente)}</td></tr>`).join("")+`</tbody></table></div>`;
+  if(Q.length) h+=`<h3>Información que la comisión debe requerir</h3><ul>`+Q.map(q=>`<li>${esc(q)}</li>`).join("")+`</ul>`;
+  if(P.length) h+=`<h3>Pendientes antes de iniciar</h3><ul>`+P.map(q=>`<li>${esc(q)}</li>`).join("")+`</ul>`;
+  h+=`<h3>Borrador de Hoja Informativa</h3><div class="ficha">${esc(r.hoja_informativa)}</div>`;
+  if(r.segundo_borrador&&String(r.segundo_borrador).trim()) h+=`<details><summary>Segundo borrador listo para completar</summary><div class="ficha" style="margin-top:8px">${esc(r.segundo_borrador)}</div></details>`;
+  h+=`<div class="actions" style="margin-top:14px"><button class="btn ghost" id="cpSem">Copiar ficha completa</button></div>`;
+  h+=`<p class="note">El Auditorcito · creado por GSV · Herramienta de apoyo; los datos marcados [VERIFICAR] deben contrastarse antes de comunicar.</p>`;
+  $("resultSem").innerHTML=h; $("resultSem").hidden=false; $("emptySem").hidden=true;
+  $("cpSem").addEventListener('click',async()=>{ const t=[`# Ficha de Semilla de Control – ${fecha}`,`Semáforo: ${r.semaforo}`,...rows.map(x=>`${x[0]}: ${x[1]}`),`Servicio recomendado: ${r.servicio} – ${r.justificacion}`,"","Verificaciones:",...V.map(v=>`- ${v.paso}: ${v.resultado} (${v.fuente})`),"","Información a requerir:",...Q.map(q=>"- "+q),"","Pendientes:",...P.map(q=>"- "+q),"","Hoja Informativa:",r.hoja_informativa,"",r.segundo_borrador||"","","El Auditorcito · creado por GSV · Herramienta de apoyo; los datos marcados [VERIFICAR] deben contrastarse antes de comunicar."].join("\n"); try{await navigator.clipboard.writeText(t);$("cpSem").textContent="Copiado";}catch(e){$("cpSem").textContent="No se pudo copiar";} setTimeout(()=>$("cpSem").textContent="Copiar ficha completa",2500); });
+}
+</script>
+
+</body></html>
